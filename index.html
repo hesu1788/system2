@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺北市立松山高級中學 - 校園失物尋回 AI 系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            blue: '#00F0FF',
+                            dark: '#0B0F19',
+                            card: '#111827',
+                            hover: '#1F2937',
+                            border: '#1E293B',
+                            accent: '#00D8F6'
+                        }
+                    },
+                    boxShadow: {
+                        'cyber-glow': '0 0 15px rgba(0, 240, 255, 0.35)',
+                        'cyber-strong': '0 0 25px rgba(0, 240, 255, 0.6)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-cyber-dark text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-cyber-blue selection:text-black">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 bg-cyber-dark/90 backdrop-blur-md border-b border-cyber-blue/30 shadow-cyber-glow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <img src="https://www.sshs.tp.edu.tw/images/logo.png" onerror="this.onerror=null; this.src='https://placehold.co/100x100/00F0FF/0B0F19?text=SSMH';" alt="松山高中校徽" class="w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/40 tracking-wider">SSMH AI SYSTEM</span>
+                        </div>
+                        <h1 class="text-xl font-extrabold tracking-tight text-white flex items-center">
+                            松山高中 <span class="text-cyber-blue ml-2 font-mono drop-shadow-[0_0_10px_#00F0FF]">校園失物尋回 AI 系統</span>
+                        </h1>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('explore')" id="nav-explore" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 text-cyber-blue bg-cyber-blue/10 border border-cyber-blue/40 shadow-cyber-glow flex items-center space-x-2">
+                    <i class="fa-solid fa-compass"></i><span>失物廣場合集</span>
+                </button>
+                <button onclick="switchTab('report')" id="nav-report" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:text-cyber-blue hover:bg-cyber-blue/10 transition-all duration-200 flex items-center space-x-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i><span>AI 通報發布</span>
+                </button>
+                <button onclick="switchTab('search')" id="nav-search" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:text-cyber-blue hover:bg-cyber-blue/10 transition-all duration-200 flex items-center space-x-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i><span>多模態以圖搜圖</span>
+                </button>
+                <button onclick="switchTab('map')" id="nav-map" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:text-cyber-blue hover:bg-cyber-blue/10 transition-all duration-200 flex items-center space-x-2">
+                    <i class="fa-solid fa-map-location-dot"></i><span>校園地圖看板</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleAdminMode()" id="admin-toggle-btn" class="px-3 py-1.5 text-xs font-mono font-semibold rounded-md bg-slate-800 text-slate-300 border border-slate-700 hover:border-cyber-blue hover:text-cyber-blue transition">
+                    <i class="fa-solid fa-shield-halved mr-1"></i>切換：學生前台
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Banner Announcement -->
+        <div class="mb-8 p-6 rounded-2xl bg-gradient-to-r from-cyber-card via-slate-900 to-cyber-card border border-cyber-blue/40 shadow-cyber-glow relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-cyber-blue/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+                <div>
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyber-blue text-black uppercase tracking-wider shadow-[0_0_10px_#00F0FF]">AI 智能引擎運作中</span>
+                        <span class="text-xs text-slate-400 font-mono">系統即時監控 · 自動特徵向量匹配</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white tracking-wide">遺失物品？讓 AI 神經網路為您精準比對</h2>
+                    <p class="text-slate-300 text-sm mt-1">融合視覺多模態與語意描述，提供防冒領安全特徵驗證，打造高效松山校園尋回網。</p>
+                </div>
+                <button onclick="switchTab('report')" class="px-6 py-3 rounded-xl bg-cyber-blue text-black font-bold text-sm shadow-cyber-strong hover:bg-white transition duration-200 flex items-center space-x-2 shrink-0 transform hover:-translate-y-0.5">
+                    <i class="fa-solid fa-plus-circle"></i><span>快速通報遺失/拾獲</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: 失物廣場合集 (Explore Tab) -->
+        <section id="tab-explore" class="space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-cyber-card p-4 rounded-xl border border-cyber-border">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="filterType('all')" class="filter-type-btn active px-4 py-2 rounded-lg text-xs font-bold transition bg-cyber-blue text-black" data-type="all">全部物品</button>
+                    <button onclick="filterType('lost')" class="filter-type-btn px-4 py-2 rounded-lg text-xs font-bold transition text-slate-300 hover:bg-slate-800" data-type="lost">遺失尋找中 (Lost)</button>
+                    <button onclick="filterType('found')" class="filter-type-btn px-4 py-2 rounded-lg text-xs font-bold transition text-slate-300 hover:bg-slate-800" data-type="found">拾獲招領中 (Found)</button>
+                </div>
+                <div class="flex items-center space-x-2 w-full md:w-auto">
+                    <div class="relative w-full md:w-64">
+                        <input type="text" id="explore-search-input" onkeyup="renderItems()" placeholder="搜尋關鍵字或地點..." class="w-full bg-slate-900 text-slate-100 text-xs rounded-lg pl-9 pr-4 py-2.5 border border-cyber-border focus:outline-none focus:border-cyber-blue transition">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item Cards Grid -->
+            <div id="items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Items dynamically rendered here -->
+            </div>
+        </section>
+
+        <!-- TAB 2: AI 通報發布 (Report Tab) -->
+        <section id="tab-report" class="hidden max-w-3xl mx-auto">
+            <div class="bg-cyber-card p-8 rounded-2xl border border-cyber-blue/30 shadow-cyber-glow">
+                <div class="border-b border-slate-800 pb-4 mb-6">
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <i class="fa-solid fa-cube text-cyber-blue mr-2"></i>發布遺失 / 拾獲物品通報
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">填寫詳細資料，系統將自動啟動 AI 特徵提取與即時對比通知。</p>
+                </div>
+
+                <form id="report-form" onsubmit="handleFormSubmit(event)" class="space-y-5">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">通報類型</label>
+                            <select id="form-type" class="w-full bg-slate-900 border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                                <option value="found">拾獲物品 (Found)</option>
+                                <option value="lost">遺失物品 (Lost)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">物品種類</label>
+                            <select id="form-category" class="w-full bg-slate-900 border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                                <option value="3C電子">3C電子配件</option>
+                                <option value="證件皮夾">證件 / 皮夾錢包</option>
+                                <option value="水壺隨身">水壺 / 個人配件</option>
+                                <option value="書籍文具">書籍 / 文具用品</option>
+                                <option value="衣物外套">外套 / 運動衣物</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-2">物品名稱標題</label>
+                        <input type="text" id="form-title" required placeholder="例如：黑色 AirPods Pro 充電盒、綠色水壺" class="w-full bg-slate-900 border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">地點區域 (松山高中內)</label>
+                            <select id="form-location" class="w-full bg-slate-900 border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                                <option value="圖書館大樓">圖書館大樓</option>
+                                <option value="綜合教學大樓">綜合教學大樓</option>
+                                <option value="學生活動中心">學生活動中心</option>
+                                <option value="操場/司令台">操場 / 司令台</option>
+                                <option value="熱食部/餐廳">熱食部 / 餐廳</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">發生時間</label>
+                            <input type="date" id="form-date" required class="w-full bg-slate-900 border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-2">詳細特徵描述 (提供 AI 比對關鍵字)</label>
+                        <textarea id="form-desc" rows="3" placeholder="請描述顏色、品牌、貼紙裝飾、刮痕等特徵..." class="w-full bg-slate-900 border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none"></textarea>
+                    </div>
+
+                    <!-- Hidden Question for Anti-Fraud -->
+                    <div class="p-4 bg-slate-900/80 rounded-xl border border-cyber-blue/20 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-cyber-blue"><i class="fa-solid fa-lock mr-1"></i>防冒領 - 隱密特徵驗證問題設定</span>
+                            <span class="text-[10px] text-slate-400">僅供認領時比對驗證</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="text" id="form-secret-q" placeholder="例如：皮夾內證件姓名？保護套貼紙圖樣？" class="bg-cyber-card border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                            <input type="text" id="form-secret-a" placeholder="答（AI自動隱藏防洩漏）" class="bg-cyber-card border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-cyber-blue text-black font-bold text-sm shadow-cyber-strong hover:bg-white transition duration-200">
+                        確認發布並啟動 AI 即時比對
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- TAB 3: 多模態搜尋 (Search Tab) -->
+        <section id="tab-search" class="hidden space-y-6">
+            <div class="bg-cyber-card p-6 rounded-2xl border border-cyber-blue/30 shadow-cyber-glow text-center space-y-4">
+                <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-network-wired text-cyber-blue mr-2"></i>AI 多模態以圖與語意搜尋</h3>
+                <p class="text-xs text-slate-400 max-w-xl mx-auto">上傳照片或輸入特徵描述，AI 模型將比對圖片視覺向量與文本語意，即時排序關聯度最高之物品。</p>
+                
+                <div class="max-w-2xl mx-auto space-y-4">
+                    <div class="border-2 border-dashed border-cyber-blue/40 hover:border-cyber-blue rounded-xl p-6 bg-slate-900/50 transition cursor-pointer">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-cyber-blue mb-2"></i>
+                        <p class="text-xs text-slate-300 font-semibold">拖曳圖片至此，或點擊上傳物品照片</p>
+                        <p class="text-[10px] text-slate-500 mt-1">支援 JPG, PNG 特徵提取分析</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="ai-search-prompt" placeholder="或輸入自然語言描述，如：『在圖書館掉落的藍色皮革皮夾，裡面有卡片』" class="flex-grow bg-slate-900 border border-cyber-border rounded-xl px-4 py-3 text-xs text-slate-200 focus:border-cyber-blue outline-none">
+                        <button onclick="runAISearch()" class="px-6 py-3 bg-cyber-blue text-black font-bold text-xs rounded-xl shadow-cyber-glow hover:bg-white transition shrink-0">
+                            AI 比對運算
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Results Display -->
+            <div id="ai-search-results" class="hidden space-y-4">
+                <h4 class="text-sm font-bold text-cyber-blue flex items-center">
+                    <i class="fa-solid fa-microchip mr-2"></i>AI 特徵相似度分析結果（依信心度排序）
+                </h4>
+                <div id="ai-results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+        </section>
+
+        <!-- TAB 4: 校園地圖看板 (Map & Analytics Tab) -->
+        <section id="tab-map" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Hotspot Map simulated -->
+                <div class="lg:col-span-2 bg-cyber-card p-6 rounded-2xl border border-cyber-border space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-md font-bold text-white flex items-center">
+                            <i class="fa-solid fa-fire text-cyber-blue mr-2"></i>松山高中失物高風險熱點地圖
+                        </h3>
+                        <span class="text-[10px] bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/30 px-2 py-0.5 rounded">即時數據</span>
+                    </div>
+
+                    <div class="relative bg-slate-900 border border-slate-800 rounded-xl h-80 overflow-hidden flex items-center justify-center p-4">
+                        <!-- Simulated Map Layout -->
+                        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#00F0FF_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                        
+                        <div class="relative w-full h-full border border-slate-800 rounded-lg bg-slate-950/80 p-4 grid grid-cols-3 grid-rows-2 gap-3 text-xs">
+                            <div onclick="filterByMapLocation('圖書館大樓')" class="bg-slate-900/90 border border-cyber-blue/30 rounded-lg p-3 hover:border-cyber-blue cursor-pointer transition flex flex-col justify-between group">
+                                <span class="font-bold text-slate-200 group-hover:text-cyber-blue">圖書館大樓</span>
+                                <span class="text-[10px] text-cyber-blue font-mono">高風險區域 (14件)</span>
+                            </div>
+                            <div onclick="filterByMapLocation('綜合教學大樓')" class="bg-slate-900/90 border border-cyber-border rounded-lg p-3 hover:border-cyber-blue cursor-pointer transition flex flex-col justify-between group">
+                                <span class="font-bold text-slate-200 group-hover:text-cyber-blue">綜合教學大樓</span>
+                                <span class="text-[10px] text-slate-400 font-mono">中風險區域 (8件)</span>
+                            </div>
+                            <div onclick="filterByMapLocation('學生活動中心')" class="bg-slate-900/90 border border-cyber-blue/30 rounded-lg p-3 hover:border-cyber-blue cursor-pointer transition flex flex-col justify-between group">
+                                <span class="font-bold text-slate-200 group-hover:text-cyber-blue">學生活動中心</span>
+                                <span class="text-[10px] text-cyber-blue font-mono">高風險區域 (11件)</span>
+                            </div>
+                            <div onclick="filterByMapLocation('操場/司令台')" class="bg-slate-900/90 border border-cyber-border rounded-lg p-3 hover:border-cyber-blue cursor-pointer transition flex flex-col justify-between group">
+                                <span class="font-bold text-slate-200 group-hover:text-cyber-blue">操場 / 司令台</span>
+                                <span class="text-[10px] text-slate-400 font-mono">低風險區域 (3件)</span>
+                            </div>
+                            <div onclick="filterByMapLocation('熱食部/餐廳')" class="bg-slate-900/90 border border-cyber-border rounded-lg p-3 hover:border-cyber-blue cursor-pointer transition flex flex-col justify-between group">
+                                <span class="font-bold text-slate-200 group-hover:text-cyber-blue">熱食部 / 餐廳</span>
+                                <span class="text-[10px] text-slate-400 font-mono">中風險區域 (6件)</span>
+                            </div>
+                            <div class="bg-slate-900/40 border border-dashed border-slate-800 rounded-lg p-3 flex items-center justify-center text-slate-600">
+                                校門 / 行政區
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Analytics Chart -->
+                <div class="bg-cyber-card p-6 rounded-2xl border border-cyber-border flex flex-col justify-between space-y-4">
+                    <h3 class="text-md font-bold text-white flex items-center">
+                        <i class="fa-solid fa-chart-pie text-cyber-blue mr-2"></i>遺失物品類別統計
+                    </h3>
+                    <div class="relative h-60 w-full flex items-center justify-center">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="p-3 bg-slate-900/80 rounded-xl text-xs space-y-1">
+                        <p class="text-slate-300 font-bold">本月成功尋回率：<span class="text-cyber-blue font-mono text-sm">84.2%</span></p>
+                        <p class="text-[10px] text-slate-400">通過 AI 隱密特徵比對大幅提升認領安全性。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Verification Modal (Anti-Fraud) -->
+    <div id="verify-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-blue/50 w-full max-w-md rounded-2xl p-6 shadow-cyber-strong space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center">
+                    <i class="fa-solid fa-user-shield text-cyber-blue mr-2"></i>防冒領 AI 隱密特徵驗證
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-3">
+                <p class="text-xs text-slate-300">為防範不當冒領，請回答該物品發布者設定的隱密驗證題目：</p>
+                <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-cyber-blue font-bold block">驗證問題：</span>
+                    <p id="modal-question" class="text-xs text-slate-200 mt-1 font-semibold">--</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">您的答案：</label>
+                    <input type="text" id="modal-answer" placeholder="請輸入答案細節..." class="w-full bg-slate-900 border border-cyber-border rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyber-blue outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-800">取消</button>
+                <button onclick="submitClaimVerification()" class="px-4 py-2 rounded-lg text-xs font-bold bg-cyber-blue text-black shadow-cyber-glow hover:bg-white">提交 AI 比對驗證</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Default Dataset
+        let items = [
+            {
+                id: 1,
+                type: 'found',
+                title: '黑色 AirPods Pro 充電盒',
+                category: '3C電子',
+                location: '圖書館大樓',
+                date: '2026-11-09',
+                desc: '在三樓自習室角落拾獲，保護套上有防刮傷紋路。',
+                secretQ: '保護套內側或頂部的貼紙圖案？',
+                secretA: '鋼鐵人',
+                status: '招領中',
+                img: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=400&q=80',
+                matchScore: 95
+            },
+            {
+                id: 2,
+                type: 'lost',
+                title: '藍色皮革證件皮夾',
+                category: '證件皮夾',
+                location: '學生活動中心',
+                date: '2026-11-10',
+                desc: '內有學生證與幾張悠遊卡，皮夾邊角有輕微磨損。',
+                secretQ: '皮夾內學生證姓名最後一個字？',
+                secretA: '明',
+                status: '搜尋中',
+                img: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=400&q=80',
+                matchScore: 88
+            },
+            {
+                id: 3,
+                type: 'found',
+                title: '象印保溫水壺 (綠色)',
+                category: '水壺隨身',
+                location: '綜合教學大樓',
+                date: '2026-11-08',
+                desc: '480ml 霧面瓶身，底部有圓形防滑墊。',
+                secretQ: '瓶身貼紙內容？',
+                secretA: 'Slam Dunk',
+                status: '招領中',
+                img: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=400&q=80',
+                matchScore: 92
+            }
+        ];
+
+        let currentActiveTab = 'explore';
+        let currentFilterType = 'all';
+        let currentVerifyItemId = null;
+        let isAdmin = false;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderItems();
+            initChart();
+        });
+
+        // Tab Switching Function
+        function switchTab(tab) {
+            currentActiveTab = tab;
+            ['explore', 'report', 'search', 'map'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${t}`);
+                if (btn) {
+                    btn.classList.remove('text-cyber-blue', 'bg-cyber-blue/10', 'border', 'border-cyber-blue/40', 'shadow-cyber-glow');
+                    btn.classList.add('text-slate-300');
+                }
+            });
+
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tab}`);
+            if (activeBtn) {
+                activeBtn.classList.add('text-cyber-blue', 'bg-cyber-blue/10', 'border', 'border-cyber-blue/40', 'shadow-cyber-glow');
+                activeBtn.classList.remove('text-slate-300');
+            }
+        }
+
+        // Render Item Cards
+        function renderItems() {
+            const grid = document.getElementById('items-grid');
+            const keyword = document.getElementById('explore-search-input')?.value.toLowerCase() || '';
+
+            const filtered = items.filter(item => {
+                const matchesType = (currentFilterType === 'all') || (item.type === currentFilterType);
+                const matchesKey = item.title.toLowerCase().includes(keyword) || 
+                                   item.location.toLowerCase().includes(keyword) || 
+                                   item.category.toLowerCase().includes(keyword);
+                return matchesType && matchesKey;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">暫無符合條件的失物紀錄</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => `
+                <div class="bg-cyber-card border border-cyber-border rounded-xl overflow-hidden hover:border-cyber-blue/60 transition duration-300 flex flex-col justify-between group">
+                    <div>
+                        <div class="relative h-44 overflow-hidden bg-slate-900">
+                            <img src="${item.img}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute top-3 left-3 flex space-x-1">
+                                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold ${item.type === 'found' ? 'bg-cyber-blue text-black' : 'bg-pink-500 text-white'}">
+                                    ${item.type === 'found' ? '拾獲招領' : '遺失尋找'}
+                                </span>
+                                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-900/80 text-slate-200 border border-slate-700">
+                                    ${item.category}
+                                </span>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-slate-950/80 text-[10px] font-mono px-2 py-0.5 rounded text-cyber-blue border border-cyber-blue/30">
+                                AI 相似匹配度: ${item.matchScore}%
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <h4 class="font-bold text-slate-100 text-sm group-hover:text-cyber-blue transition">${item.title}</h4>
+                            <div class="text-[11px] text-slate-400 space-y-1">
+                                <p><i class="fa-solid fa-location-dot text-cyber-blue mr-1.5"></i>${item.location}</p>
+                                <p><i class="fa-regular fa-calendar mr-1.5"></i>${item.date}</p>
+                                <p class="text-slate-300 line-clamp-2 mt-1">${item.desc}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-slate-800/80 flex items-center justify-between">
+                        <span class="text-[10px] font-mono text-slate-400">狀態：<span class="text-slate-200">${item.status}</span></span>
+                        ${isAdmin ? `
+                            <button onclick="deleteItem(${item.id})" class="px-3 py-1.5 rounded text-xs bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition">管理員刪除</button>
+                        ` : `
+                            <button onclick="openVerifyModal(${item.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/40 hover:bg-cyber-blue hover:text-black transition">
+                                申請驗證認領
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter Type Buttons
+        function filterType(type) {
+            currentFilterType = type;
+            document.querySelectorAll('.filter-type-btn').forEach(btn => {
+                if (btn.dataset.type === type) {
+                    btn.className = "filter-type-btn active px-4 py-2 rounded-lg text-xs font-bold transition bg-cyber-blue text-black";
+                } else {
+                    btn.className = "filter-type-btn px-4 py-2 rounded-lg text-xs font-bold transition text-slate-300 hover:bg-slate-800";
+                }
+            });
+            renderItems();
+        }
+
+        // Form Submit
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const newItem = {
+                id: Date.now(),
+                type: document.getElementById('form-type').value,
+                category: document.getElementById('form-category').value,
+                title: document.getElementById('form-title').value,
+                location: document.getElementById('form-location').value,
+                date: document.getElementById('form-date').value,
+                desc: document.getElementById('form-desc').value,
+                secretQ: document.getElementById('form-secret-q').value || '是否有特殊紋路痕跡？',
+                secretA: document.getElementById('form-secret-a').value || '有',
+                status: '招領中',
+                img: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=400&q=80',
+                matchScore: Math.floor(Math.random() * 15) + 85
+            };
+
+            items.unshift(newItem);
+            alert('通報發布成功！AI 神經網絡已完成特徵特徵向量提取。');
+            document.getElementById('report-form').reset();
+            switchTab('explore');
+            renderItems();
+        }
+
+        // Run AI Search Simulation
+        function runAISearch() {
+            const resultsContainer = document.getElementById('ai-search-results');
+            const grid = document.getElementById('ai-results-grid');
+            resultsContainer.classList.remove('hidden');
+
+            grid.innerHTML = items.slice(0, 3).map(item => `
+                <div class="bg-cyber-card border border-cyber-blue/40 p-4 rounded-xl space-y-3">
+                    <div class="flex justify-between items-start">
+                        <h5 class="font-bold text-xs text-white">${item.title}</h5>
+                        <span class="text-xs font-mono font-bold text-cyber-blue bg-cyber-blue/10 border border-cyber-blue/30 px-2 py-0.5 rounded">匹配度 ${item.matchScore}%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">${item.desc}</p>
+                    <button onclick="openVerifyModal(${item.id})" class="w-full py-2 bg-cyber-blue text-black font-bold text-xs rounded-lg hover:bg-white transition">發起特徵驗證</button>
+                </div>
+            `).join('');
+        }
+
+        // Modal Logic
+        function openVerifyModal(id) {
+            currentVerifyItemId = id;
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('modal-question').innerText = item.secretQ;
+            document.getElementById('verify-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('verify-modal').classList.add('hidden');
+            document.getElementById('modal-answer').value = '';
+        }
+
+        function submitClaimVerification() {
+            const ans = document.getElementById('modal-answer').value;
+            const item = items.find(i => i.id === currentVerifyItemId);
+
+            if (ans.trim() === item.secretA.trim()) {
+                alert('🎉 AI 隱密特徵匹配成功 (匹配度 99.4%)！驗證通過，已為您向教務處提交領取申請。');
+                closeModal();
+            } else {
+                alert('❌ 答案與發布者設定之隱密特徵不符，AI 驗證未通過。');
+            }
+        }
+
+        // Admin Toggle
+        function toggleAdminMode() {
+            isAdmin = !isAdmin;
+            const btn = document.getElementById('admin-toggle-btn');
+            btn.innerHTML = isAdmin ? '<i class="fa-solid fa-user-gear mr-1"></i>切換：教務處/管理員' : '<i class="fa-solid fa-shield-halved mr-1"></i>切換：學生前台';
+            renderItems();
+        }
+
+        function deleteItem(id) {
+            items = items.filter(i => i.id !== id);
+            renderItems();
+        }
+
+        function filterByMapLocation(loc) {
+            switchTab('explore');
+            document.getElementById('explore-search-input').value = loc;
+            renderItems();
+        }
+
+        // Chart Initialization
+        function initChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['3C電子', '證件皮夾', '水壺配件', '書籍文具', '衣物外套'],
+                    datasets: [{
+                        data: [40, 25, 15, 12, 8],
+                        backgroundColor: ['#00F0FF', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94A3B8', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
